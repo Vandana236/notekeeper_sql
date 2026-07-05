@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "438294725657",
+    "project_id": "notekeeperapp-46c13",
+    "storage_bucket": "notekeeperapp-46c13.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:438294725657:android:1ed9a11f5da7af16625688",
+        "android_client_info": {
+          "package_name": "com.example.notekeeper_app_with_sqlite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASEe0UxXkhHOuD5JUJKCwGXolf6y0aGJM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
