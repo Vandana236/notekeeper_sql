@@ -11,13 +11,16 @@ import '../widgets/note_button.dart';
 import '../widgets/note_dropdown.dart';
 import '../widgets/note_textfield.dart';
 
+
 class AddEditNotePage extends StatefulWidget {
 
   final NoteModel? note;
+  final NoteLocalDataSource dataSource;
 
   const AddEditNotePage({
     super.key,
     this.note,
+    required this.dataSource,
   });
 
   @override
@@ -111,8 +114,7 @@ class _AddEditNotePageState extends State<AddEditNotePage> {
         description,
       );
       note.isSynced = 0;
-      NoteLocalDataSource helper =
-      NoteLocalDataSource();
+      final helper = widget.dataSource;
 
       /// UPDATE NOTE
       if (widget.note != null) {
@@ -182,10 +184,9 @@ class _AddEditNotePageState extends State<AddEditNotePage> {
 
     try {
 
-      await NoteLocalDataSource()
-          .deleteNote(
-        widget.note!.id!,
-      );
+     await widget.dataSource.deleteNote(
+  widget.note!.id!,
+);
 
       PriorityHelper.showSnackBar(
 

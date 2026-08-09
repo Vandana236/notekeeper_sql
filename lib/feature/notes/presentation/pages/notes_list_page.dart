@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/services/native/native_service.dart';
+import '../../../../core/services/crashlytics_service.dart';
 import '../../../../core/utils/priority_helper.dart';
 import '../../data/datasource/note_local_datasource.dart';
 import '../../data/models/notes.dart';
 import '../widgets/note_tile.dart';
 import 'add_edit_note_page.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+
 class NotesListPage extends StatefulWidget {
-  const NotesListPage({super.key});
+  final NoteLocalDataSource dataSource;
+
+  final CrashlyticsService crashlyticsService;
+
+  const NotesListPage({
+    super.key,
+    required this.dataSource,
+    this.crashlyticsService = const CrashlyticsService(),
+  });
 
   @override
   State<NotesListPage> createState() => _NotesListPageState();
@@ -17,97 +25,145 @@ class NotesListPage extends StatefulWidget {
 class _NotesListPageState extends State<NotesListPage> {
 
   /// DATABASE
-  final NoteLocalDataSource databaseHelper = NoteLocalDataSource();
+  late NoteLocalDataSource dataSource;
+
+  /// CRASHLYTICS
+  late CrashlyticsService crashlyticsService;
 
   /// NOTE LIST
   List<NoteModel> noteList = [];
-  bool isOnline = true;
+
   /// NOTE COUNT
   int count = 0;
-  int batteryLevel = 0;
+
+  // ============================================================
+  // BATTERY CODE - COMMENTED FOR NOW
+  // ============================================================
+
+  // int batteryLevel = 0;
 
   @override
   void initState() {
     super.initState();
+
+    dataSource = widget.dataSource;
+
+    crashlyticsService =
+        widget.crashlyticsService;
+
     updateListView();
-    loadBatteryLevel();
+
+    // Battery code commented
+    // loadBatteryLevel();
   }
 
   /// UPDATE LIST VIEW
-  void updateListView() async {
-
+  Future<void> updateListView() async {
     try {
-
       final notes =
-      await databaseHelper
-          .getNoteList();
+          await dataSource.getNoteList();
+
+      if (!mounted) return;
 
       setState(() {
-
         noteList = notes;
-
         count = notes.length;
       });
-
     } catch (e, stack) {
 
-      /// CRASHLYTICS
-      await FirebaseCrashlytics
-          .instance
-          .recordError(
+      await crashlyticsService.recordError(
         e,
         stack,
       );
 
-      /// SNACKBAR
+      if (!mounted) return;
+
       PriorityHelper.showSnackBar(
-
         context,
-
         "Failed to Load Notes",
       );
     }
   }
 
   /// DELETE NOTE
-  void deleteNote(BuildContext context, int id,) async {
-    int result = await databaseHelper.deleteNote(id);
-    if (result != 0) {
+  Future<void> deleteNote(
+    BuildContext context,
+    int id,
+  ) async {
+    try {
+      final result =
+          await dataSource.deleteNote(id);
+
+      if (result != 0) {
+        if (!mounted) return;
+
+        PriorityHelper.showSnackBar(
+          context,
+          "Note Deleted Successfully",
+        );
+
+        await updateListView();
+      }
+    } catch (e, stack) {
+
+      await crashlyticsService.recordError(
+        e,
+        stack,
+      );
+
+      if (!mounted) return;
+
       PriorityHelper.showSnackBar(
         context,
-        "Note Deleted Successfully",
+        "Failed to Delete Note",
       );
-      updateListView();
     }
   }
-  Future<void> loadBatteryLevel()
-  async {
 
-    final level =
-    await NativeService
-        .getBatteryLevel();
+  // ============================================================
+  // BATTERY CODE - COMMENTED FOR NOW
+  // ============================================================
 
-    setState(() {
+  // Future<void> loadBatteryLevel() async {
+  //   try {
+  //     final level =
+  //         await NativeService.getBatteryLevel();
 
-      batteryLevel = level;
-    });
-  }
+  //     if (!mounted) return;
+
+  //     setState(() {
+  //       batteryLevel = level;
+  //     });
+  //   } catch (e, stack) {
+  //     await crashlyticsService.recordError(
+  //       e,
+  //       stack,
+  //     );
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple,
+        backgroundColor:
+            Colors.deepPurple,
+
         title: const Text(
           "Notes",
           style: TextStyle(
             color: Colors.white,
           ),
         ),
+
+        // ======================================================
+        // BATTERY UI - COMMENTED FOR NOW
+        // ======================================================
+
         // actions: [
-        //
         //   Padding(
         //     padding: const EdgeInsets.all(12),
-        //
         //     child: Center(
         //       child: Text(
         //         '$batteryLevel%',
@@ -119,18 +175,12 @@ class _NotesListPageState extends State<NotesListPage> {
         //   ),
         // ],
 
-        // you can crash your app manualy by clicking on the bug icon
+        /// CRASHLYTICS TEST BUTTON
         actions: [
-
           IconButton(
-
             onPressed: () {
-
-              FirebaseCrashlytics
-                  .instance
-                  .crash();
+              crashlyticsService.crash();
             },
-
             icon: const Icon(
               Icons.bug_report,
               color: Colors.white,
@@ -138,129 +188,122 @@ class _NotesListPageState extends State<NotesListPage> {
           ),
         ],
       ),
+
+      /// BODY
       body: count == 0
-      /// EMPTY UI
           ? const Center(
-        child: Text(
-          "No Notes Available",
-        ),
-      )
-
-      /// NOTES LIST
+              child: Text(
+                "No Notes Available",
+              ),
+            )
           : ListView.builder(
-        itemCount: count,
-        itemBuilder: (context, index,) {
-          return NoteTile(
-            /// TITLE
-            title: noteList[index].title ?? '',
+              itemCount: noteList.length,
+              itemBuilder: (context, index) {
 
-            /// DATE
-            date: noteList[index].date ?? '',
+                final note =
+                    noteList[index];
 
-            /// PRIORITY
-            priority: noteList[index].priority ?? 1,
+                return NoteTile(
+                  /// TITLE
+                  title: note.title ?? '',
 
-            /// EDIT NOTE
-            onTap: () async {
+                  /// DATE
+                  date: note.date ?? '',
 
-              try {
+                  /// PRIORITY
+                  priority:
+                      note.priority ?? 1,
 
-                bool? result =
-                await Navigator.push(
+                  /// SYNC STATUS
+                  isSynced:
+                      note.isSynced ?? 0,
 
-                  context,
+                  /// EDIT NOTE
+                  onTap: () async {
+                    try {
 
-                  MaterialPageRoute(
-
-                    builder: (_) =>
-                        AddEditNotePage(
-                          note:
-                          noteList[index],
+                      final result =
+                          await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AddEditNotePage(
+                            note: note,
+                            dataSource:
+                                dataSource,
+                          ),
                         ),
-                  ),
+                      );
+
+                      if (result == true) {
+                        await updateListView();
+                      }
+
+                    } catch (e, stack) {
+
+                      await crashlyticsService
+                          .recordError(
+                        e,
+                        stack,
+                      );
+
+                      if (!mounted) return;
+
+                      PriorityHelper.showSnackBar(
+                        context,
+                        "Navigation Failed",
+                      );
+                    }
+                  },
+
+                  /// DELETE NOTE
+                  onDelete: () {
+                    deleteNote(
+                      context,
+                      note.id!,
+                    );
+                  },
                 );
-
-                if (result == true) {
-
-                  updateListView();
-                }
-
-              } catch (e, stack) {
-
-                /// CRASHLYTICS
-                await FirebaseCrashlytics
-                    .instance
-                    .recordError(
-                  e,
-                  stack,
-                );
-
-                /// SNACKBAR
-                PriorityHelper.showSnackBar(
-
-                  context,
-
-                  "Navigation Failed",
-                );
-              }
-            },
-
-            /// DELETE NOTE
-            onDelete: () {
-
-              deleteNote(
-                context,
-                noteList[index].id!,
-              );
-            },
-            isSynced: noteList[index].isSynced ?? 0,
-          );
-        },
-      ),
+              },
+            ),
 
       /// ADD NOTE
       floatingActionButton:
-      FloatingActionButton(
-
+          FloatingActionButton(
         backgroundColor:
-        Colors.deepPurple,
+            Colors.deepPurple,
 
         onPressed: () async {
-
           try {
 
-            bool? result =
-            await Navigator.push(
-
+            final result =
+                await Navigator.push(
               context,
-
               MaterialPageRoute(
-
                 builder: (_) =>
-                const AddEditNotePage(),
+                    AddEditNotePage(
+                  dataSource:
+                      dataSource,
+                ),
               ),
             );
 
             if (result == true) {
-
-              updateListView();
+              await updateListView();
             }
 
           } catch (e, stack) {
 
-            /// CRASHLYTICS
-            await FirebaseCrashlytics
-                .instance
+            await crashlyticsService
                 .recordError(
               e,
               stack,
             );
 
-            /// SNACKBAR
+            if (!mounted) return;
+
             PriorityHelper.showSnackBar(
-
               context,
-
               "Failed to Open Add Note Page",
             );
           }

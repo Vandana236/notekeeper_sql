@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/priority_helper.dart';
 
 class NoteTile extends StatelessWidget {
-
   final String title;
   final String date;
   final int priority;
@@ -23,32 +22,27 @@ class NoteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Card(
-
       child: ListTile(
-
         onTap: onTap,
 
         /// PRIORITY
         leading: CircleAvatar(
-
-          backgroundColor: PriorityHelper.getPriorityColor(priority,),
-
-          child:  PriorityHelper .getPriorityIcon(priority,
+          backgroundColor: PriorityHelper.getPriorityColor(
+            priority,
+          ),
+          child: PriorityHelper.getPriorityIcon(
+            priority,
           ),
         ),
 
         /// TITLE
-        title:  Text(
-          "isSynced: $isSynced",
-        ),
-        //Text(title),
+        title: Text(title),
 
         /// DATE
         subtitle: Text(date),
 
-        /// DELETE
+        /// DELETE + SYNC
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -60,6 +54,7 @@ class NoteTile extends StatelessWidget {
                   ? Colors.green
                   : Colors.red,
             ),
+
             IconButton(
               onPressed: onDelete,
               icon: const Icon(

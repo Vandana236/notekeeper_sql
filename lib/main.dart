@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:notekeeper_app_with_sqlite/core/database/database_helper.dart';
+import 'package:notekeeper_app_with_sqlite/feature/notes/data/datasource/note_local_datasource.dart';
 import 'feature/notes/presentation/pages/notes_list_page.dart';
-import 'dart:ui';
-
-import 'package:flutter/material.dart';
-
+import 'dart:ui'; 
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -26,12 +25,19 @@ void main() async{
     );
     return true;
   };
+   final db = await DatabaseHelper.initializeDatabase();
 
-  runApp(const MyApp());
+  final dataSource = NoteLocalDataSource(
+    database: db,
+  );
+
+  runApp(  MyApp(dataSource: dataSource,));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+   final NoteLocalDataSource dataSource;
+  const MyApp({super.key,
+  required this.dataSource,});
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +48,12 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.deepPurple,
       ),
-      home:  const NotesListPage(),
+      home:  NotesListPage( dataSource: dataSource,),
       // ListWidget()
 
     );
   }
 }
-
 
 class ListWidget extends StatefulWidget {
   const ListWidget({super.key});
