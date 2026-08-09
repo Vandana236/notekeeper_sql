@@ -189,7 +189,7 @@ void main() {
       'should show error when getNoteList throws exception',
       (tester) async {
         final exception = Exception('Database error');
-        final stackTrace = StackTrace.current;
+        // final stackTrace = StackTrace.current;
 
         when(
           () => mockDataSource.getNoteList(),
